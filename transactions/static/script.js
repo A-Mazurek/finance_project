@@ -1,44 +1,38 @@
 document.addEventListener('DOMContentLoaded', () => {
     const table = document.querySelector('table');
-    const headers = table.querySelectorAll('th');
     const rows = Array.from(table.querySelectorAll('tbody tr'));
+    const categoryFilter = document.getElementById('categoryFilter');
+    const searchFilter = document.getElementById('searchFilter');
+    const thresholdInput = document.getElementById('thresholdInput');
 
-    // Sort table by column
-    headers.forEach((header, index) => {
-        header.addEventListener('click', () => {
-            const sortedRows = rows.sort((a, b) => {
-                const aText = a.querySelectorAll('td')[index].textContent;
-                const bText = b.querySelectorAll('td')[index].textContent;
 
-                return aText.localeCompare(bText, undefined, {
-                    numeric: index === 2, // Sort numerically if it's the amount column
-                    sensitivity: 'base'
-                });
-            });
-
-            while (table.querySelector('tbody').firstChild) {
-                table.querySelector('tbody').removeChild(table.querySelector('tbody').firstChild);
-            }
-
-            table.querySelector('tbody').append(...sortedRows);
-        });
-    });
-
-    // Filter table
-    const filterInput = document.createElement('input');
-    filterInput.setAttribute('type', 'text');
-    filterInput.setAttribute('placeholder', 'Filter transactions...');
-    table.parentElement.insertBefore(filterInput, table);
-
-    filterInput.addEventListener('keyup', () => {
-        const filterValue = filterInput.value.toLowerCase();
+    function filterRows() {
+        const categoryValue = categoryFilter.value.toLowerCase();
+        const searchValue = searchFilter.value.toLowerCase();
+        const thresholdValue = parseFloat(thresholdInput.value);
 
         rows.forEach(row => {
             const cells = row.querySelectorAll('td');
-            const matches = Array.from(cells).some(cell => cell.textContent.toLowerCase().includes(filterValue));
-            row.style.display = matches ? '' : 'none';
+            const categoryMatch = categoryValue === "" || cells[3].textContent.toLowerCase() === categoryValue;
+            const searchMatch = Array.from(cells).some(cell => cell.textContent.toLowerCase().includes(searchValue));
+            row.style.display = categoryMatch && searchMatch ? '' : 'none';
+
+            // Highlight rows with amount greater than threshold
+            const amount = parseFloat(cells[2].textContent);
+            if (!isNaN(amount) && amount > thresholdValue) {
+                row.style.color = 'red';
+            } else {
+                row.style.color = '';
+            }
         });
-    });
+    }
+
+    categoryFilter.addEventListener('change', filterRows);
+    searchFilter.addEventListener('keyup', filterRows);
+    thresholdInput.addEventListener('input', filterRows);
+
+    // Initial call to apply filters and highlighting
+    filterRows();
 
     // Highlight rows on hover
     rows.forEach(row => {
